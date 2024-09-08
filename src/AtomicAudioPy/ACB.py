@@ -71,10 +71,11 @@ class ACB:
 			trueAwbHash = hashlib.md5(self.AwbBytes)
 			# ACE-created ACBs fail this lol. sad!
 			#assert storedAwbHash == array.array("B", trueAwbHash.digest())
-			if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Magic == b"@UTF":
-				self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.GetRowField(0, "Header").Value.Value.check_equal(self.StreamAwbStruct)
-			else:
-				self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.check_equal(self.StreamAwbStruct)
+			if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value is not None:
+				if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Magic == b"@UTF":
+					self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.GetRowField(0, "Header").Value.Value.check_equal(self.StreamAwbStruct)
+				else:
+					self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.check_equal(self.StreamAwbStruct)
 
 		if "Id" in self.Tables["Waveform"].FieldNames:
 			self.SimpleAwbId = True
@@ -202,7 +203,7 @@ class ACB:
 				if audio is not None:
 					if adxKey is not None:
 						audio.decrypt(adxKey)
-					audio.write(filename)
+					audio.write_right(filename)
 				elif awb is not None:
 					with open(filename, "wb") as f:
 						f.write(awb.EntryData[awbId])
@@ -407,10 +408,11 @@ class ACB:
 				awb.EntryData[awb.IdToInd[awbId]] = replacementBytes
 			if streaming:
 				self.StreamAwbStruct.update_offsets()
-				if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Magic == b"@UTF":
-					self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.GetRowField(0, "Header").Value.Value.set_equal(self.StreamAwbStruct)
-				else:
-					self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.set_equal(self.StreamAwbStruct)
+				if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value is not None:
+					if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Magic == b"@UTF":
+						self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.GetRowField(0, "Header").Value.Value.set_equal(self.StreamAwbStruct)
+					else:
+						self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.set_equal(self.StreamAwbStruct)
 				self.RefreshHash()
 			self.AcbStruct.update_offsets()
 		else:
@@ -452,10 +454,11 @@ class ACB:
 		awb.EntryData.append(newBytes)
 		if streaming:
 			self.StreamAwbStruct.update_offsets()
-			if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Magic == b"@UTF":
-				self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.GetRowField(0, "Header").Value.Value.set_equal(self.StreamAwbStruct)
-			else:
-				self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.set_equal(self.StreamAwbStruct)
+			if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value is not None:
+				if self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Magic == b"@UTF":
+					self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.GetRowField(0, "Header").Value.Value.set_equal(self.StreamAwbStruct)
+				else:
+					self.AcbStruct.GetRowField(0, "StreamAwbAfs2Header").Value.Value.set_equal(self.StreamAwbStruct)
 			self.RefreshHash()
 		else:
 			self.AcbStruct.update_offsets()
@@ -723,7 +726,7 @@ class ACB:
 				if audio is not None:
 					if adxKey is not None:
 						audio.decrypt(adxKey)
-					audio.write(filename)
+					audio.write_right(filename)
 				elif awb is not None:
 					with open(filename, "wb") as f:
 						f.write(awb.EntryData[awbId])
