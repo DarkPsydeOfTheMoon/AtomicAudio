@@ -8,6 +8,7 @@ from io import BytesIO
 
 from UTFAFS import *
 from ADX import ADX
+from HCA import HCA
 
 
 class ACB:
@@ -169,9 +170,13 @@ class ACB:
 					awbId = self.Tables["Waveform"].GetRowField(refIndex, "MemoryAwbId").Value
 			#assert awb is not None
 			audio = None
-			if awb is not None and EncodeExt[encodeType] == "ADX":
-				audio = ADX()
-				audio.frombytes(awb.EntryData[awb.IdToInd[awbId]])
+			if awb is not None:
+				if EncodeExt[encodeType] == "ADX":
+					audio = ADX()
+					audio.frombytes(awb.EntryData[awb.IdToInd[awbId]])
+				elif EncodeExt[encodeType] == "HCA":
+					audio = HCA()
+					audio.frombytes(awb.EntryData[awb.IdToInd[awbId]])
 			if printing:
 				print("{}Waveform from {} AWB".format(" "*depth, "Streaming" if streaming else "Memory"))
 				print("{}ID: {}".format(" "*(depth+1), awbId))
@@ -199,7 +204,7 @@ class ACB:
 					output_ext = EncodeExt[encodeType]
 				filename = f"{path}.{output_ext}"
 				if audio is not None:
-					if adxKey is not None:
+					if EncodeExt[encodeType] == "ADX" and adxKey is not None:
 						audio.decrypt(adxKey)
 					audio.write_right(filename)
 				elif awb is not None:
@@ -372,7 +377,12 @@ class ACB:
 		assert replacementType == 0 # ADX-only for now
 		awb = self.StreamAwbStruct if streaming else self.MemoryAwbStruct
 		mapper = self.StreamAwbId2WaveformRow if streaming else self.MemoryAwbId2WaveformRow
-		audio = ADX()
+		if EncodeExt[encodeType] == "ADX":
+			audio = ADX()
+		elif EncodeExt[encodeType] == "HCA":
+			audio = HCA()
+		else:
+			raise ValueError("Filetypes other than ADX and HCA not yet implemented.")
 		audio.frombytes(replacementBytes)
 		if awbId in mapper:
 			for row in mapper[awbId]:
@@ -465,9 +475,12 @@ class ACB:
 	def AddWaveformRow(self, streaming, newType, awbId):
 		awb = self.StreamAwbStruct if streaming else self.MemoryAwbStruct
 		assert awb is not None
-		if EncodeExt[newType] != "ADX":
-			raise ValueError("Non-ADX filetypes not yet implemented.")
-		audio = ADX()
+		if EncodeExt[newType] == "ADX":
+			audio = ADX()
+		elif EncodeExt[newType] == "HCA":
+			audio = HCA()
+		else:
+			raise ValueError("Filetypes other than ADX and HCA not yet implemented.")
 		audio.frombytes(awb.EntryData[awbId])
 		rowFields = {
 			"EncodeType": newType,
@@ -695,9 +708,13 @@ class ACB:
 						assert self.Tables["Waveform"].GetRowField(i, "StreamAwbId").Value == 65535
 						awbId = self.Tables["Waveform"].GetRowField(i, "MemoryAwbId").Value
 				audio = None
-				if awb is not None and EncodeExt[encodeType] == "ADX":
-					audio = ADX()
-					audio.frombytes(awb.EntryData[awb.IdToInd[awbId]])
+				if awb is not None:
+					if EncodeExt[encodeType] == "ADX":
+						audio = ADX()
+						audio.frombytes(awb.EntryData[awb.IdToInd[awbId]])
+					elif EncodeExt[encodeType] == "HCA":
+						audio = HCA()
+						audio.frombytes(awb.EntryData[awb.IdToInd[awbId]])
 				if printing:
 					print("Waveform from {} AWB".format("Streaming" if streaming else "Memory"))
 					print(" ID: {}".format(awbId))
@@ -724,7 +741,7 @@ class ACB:
 					output_ext = EncodeExt[encodeType]
 				filename = "{}/{}-{}.{}".format(base_path, "stream" if streaming else "memory", awbId, output_ext)
 				if audio is not None:
-					if adxKey is not None:
+					if adxKey is not None and EncodeExt[encodeType] == "ADX":
 						audio.decrypt(adxKey)
 					audio.write_right(filename)
 				elif awb is not None:
@@ -986,7 +1003,3 @@ class ExtEncode(Enum):
 	AT92		= 18
 	M4A			= 19
 	OGG			= 24
-
-
-if __name__ == "__main__":
-	main()

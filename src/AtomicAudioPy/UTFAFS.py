@@ -130,7 +130,6 @@ class UTF(Serializable):
 			self.DataOffset = rw.rw_uint32(self.DataOffset)
 			self.TableName = rw.rw_obj(self.TableName, RefString, self.EncodingType)
 
-
 			if rw.is_parselike:
 				self.ColumnCount = len(self.Fields)
 			self.ColumnCount = rw.rw_uint16(self.ColumnCount)
@@ -261,18 +260,30 @@ class UTF(Serializable):
 			return self.Fields[fieldInd].DefaultValue
 		return None
 
+	def TryConvertFieldToRowStorage(self, fieldInd, newValue):
+
+		if not self.Fields[fieldInd].DefaultValueFlag:
+			return
+		if TypeFlag(self.Fields[fieldInd].TypeFlag) == TypeFlag.String or TypeFlag(self.Fields[fieldInd].TypeFlag) == TypeFlag.Data:
+			if newValue.Value == self.Fields[fieldInd].DefaultValue.Value.Value:
+				return
+		elif newValue == self.Fields[fieldInd].DefaultValue.Value:
+			return
+
+		assert not self.Fields[fieldInd].RowStorageFlag
+		self.Fields[fieldInd].RowStorageFlag = 1
+		self.Fields[fieldInd].DefaultValueFlag = 0
+		for rowInd in range(self.RowCount):
+			self.Rows[rowInd][fieldInd] = CriValue(
+				typeFlag=self.Fields[fieldInd].TypeFlag,
+				value=self.Fields[fieldInd].DefaultValue.Value,
+			)
+		self.Fields[fieldInd].DefaultValue = None
+
 	def SetRowField(self, rowInd, fieldName, newValue, overwriteDefaultValue=True):
 		fieldInd = self.FieldNames[fieldName]
-		if self.Fields[fieldInd].DefaultValueFlag and newValue != self.Fields[fieldInd].DefaultValue:
-			assert not self.Fields[fieldInd].RowStorageFlag
-			self.Fields[fieldInd].RowStorageFlag = 1
-			self.Fields[fieldInd].DefaultValueFlag = 0
-			for rowInd2 in range(self.RowCount):
-				if rowInd2 != rowInd:
-					self.Rows[rowInd2][fieldInd] = CriValue(
-						typeFlag=self.Fields[fieldInd].TypeFlag,
-						value=self.Fields[fieldInd].DefaultValue.Value,
-					)
+		if self.Fields[fieldInd].DefaultValueFlag:
+			self.TryConvertFieldToRowStorage(fieldInd, newValue)
 		if self.Fields[fieldInd].RowStorageFlag:
 			self.Rows[rowInd][fieldInd] = CriValue(
 				typeFlag=self.Fields[fieldInd].TypeFlag,
@@ -282,10 +293,15 @@ class UTF(Serializable):
 	def AddRow(self, rowFields):
 		row = list()
 		for i in range(self.ColumnCount):
-			row.append(CriValue(
-				typeFlag=self.Fields[i].TypeFlag,
-				value=rowFields[self.Fields[i].Name.Value],
-			))
+			if self.Fields[i].DefaultValueFlag:
+				self.TryConvertFieldToRowStorage(i, rowFields[self.Fields[i].Name.Value])
+			if self.Fields[i].RowStorageFlag:
+				row.append(CriValue(
+					typeFlag=self.Fields[i].TypeFlag,
+					value=rowFields[self.Fields[i].Name.Value],
+				))
+			else:
+				row.append(None)
 		self.Rows.append(row)
 		self.RowCount += 1
 
@@ -620,7 +636,3 @@ class TypeFlag(Enum):
 	String		= 10
 	Data		= 11
 	GUID		= 12
-
-
-if __name__ == "__main__":
-	main()

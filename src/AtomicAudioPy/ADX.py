@@ -259,7 +259,3 @@ class EncodingMode(Enum):
 	Linear		= 3
 	Exponential	= 4
 	Ahx			= 16
-
-
-if __name__ == "__main__":
-	main()

@@ -140,7 +140,3 @@ class WAVE(Serializable):
 			self.Data = byteSamples
 		else:
 			raise ValueError("pls i only know how to do 8bit and 16bit TT_TT")
-
-
-if __name__ == "__main__":
-	main()
