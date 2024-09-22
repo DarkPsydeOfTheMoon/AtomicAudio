@@ -129,10 +129,8 @@ class ACB:
 			else:
 				self.AcbStruct.GetRowField(0, "StreamAwbHash").Value.Value = array.array("B", hashlib.md5(self.StreamAwbStruct.tobytes()).digest())
 				storedAwbHash = self.AcbStruct.GetRowField(0, "StreamAwbHash").Value.Value
-			# TODO: also update AwbBytes...?
-			assert self.AwbBytes == self.StreamAwbStruct.tobytes()
-			#trueAwbHash = hashlib.md5(self.AwbBytes)
-			trueAwbHash = hashlib.md5(self.StreamAwbStruct.tobytes())
+			self.AwbBytes = self.StreamAwbStruct.tobytes()
+			trueAwbHash = hashlib.md5(self.AwbBytes)
 			assert storedAwbHash == array.array("B", trueAwbHash.digest())
 
 	def PrettyPrint(self):
@@ -635,7 +633,7 @@ class ACB:
 		# new AWB entry
 		awbId = self.AddAwbEntry(streaming, newBytes)
 		# new Waveform row
-		length, waveRow = self.AddWaveformRow(streaming, newType, awbId)
+		length, waveRow = self.AddWaveformRow(streaming, ExtEncode[newType].value, awbId)
 		# new Synth row
 		synthRow = self.AddSynthRow(waveRow)
 		# new Command row
@@ -966,6 +964,26 @@ EncodeExt = {
 	19:	"M4A",
 	24:	"OGG", # :shrug:
 }
+
+
+class ExtEncode(Enum):
+	ADX			= 0
+	AHX			= 1
+	HCA			= 2
+	ADX2		= 3
+	WIIADPCM	= 4
+	DSADPCM		= 5
+	HCAMX		= 6
+	VAG			= 7
+	AT3			= 8
+	BCWAV		= 9
+	VAG2		= 10
+	AT9			= 11
+	XMA			= 12
+	DSP			= 13
+	AT92		= 18
+	M4A			= 19
+	OGG			= 24
 
 
 if __name__ == "__main__":

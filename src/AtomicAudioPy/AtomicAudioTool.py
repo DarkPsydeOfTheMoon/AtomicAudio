@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 from pathlib import Path
 
-from ACB import ACB
+from ACB import ACB, ExtEncode
 from ADX import ADX
 from UTFAFS import UTF
 
@@ -44,6 +44,7 @@ def main():
 	cue_parser = subparsers.add_parser("add_simple_cue", help="Use the provided audio file to create a new AWB entry and a simple cue that points to it.")
 	cue_parser.add_argument("--cue-name", required=False, help="Name of cue to be added. If omitted, will default to \"Cue{cue_id}\".")
 	cue_parser.add_argument("--cue-id", type=int, required=False, help="Cue ID of new cue. If omitted, will pick next available ID.")
+	cue_parser.add_argument("--new-audio-type", required=False, default="ADX", help="Name of the audio format of the new file. Accepted values: {}".format(", ".join(x.name for x in ExtEncode)))
 	cue_parser.add_argument("--new-audio-path", required=True, help="Path to audio file that will replace existing one.")
 	#cue_parser.add_argument("--convert-input", action=argparse.BooleanOptionalAction, help="If provided, will convert input audio file to ADX.")
 	cue_parser.add_argument("--adx-key", type=int, required=False, help="If provided, will encrypt input ADX file.") # (whether ADX at source or converted via --convert-input).")
@@ -95,7 +96,8 @@ def main():
 		if args.action == "replace_waveform":
 			acb.ReplaceWaveform(args.awb_id, streaming, inputBytes)
 		elif args.action == "add_simple_cue":
-			acb.AddWaveformAndCue(streaming, inputBytes, 0, args.cue_name, args.cue_id)
+			#print(ExtEncode[args.new_audio_type].value)
+			acb.AddWaveformAndCue(streaming, inputBytes, args.new_audio_type, args.cue_name, args.cue_id)
 
 		acb.AcbStruct.write_right(args.output_acb_path)
 		if args.output_awb_path is not None:

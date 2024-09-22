@@ -521,7 +521,8 @@ class AFS2(Serializable):
 
 			self.EndPosition = rw.rw_obj(self.EndPosition, AfsValue, self.PositionFieldLength)
 
-			assert rw.tell() == self.EntryPositions[0].Value
+			if rw.is_constructlike:
+				assert rw.tell() == self.EntryPositions[0].Value
 
 			for i in range(self.EntryCount):
 				self.IdToInd[self.EntryIds[i].Value] = i
