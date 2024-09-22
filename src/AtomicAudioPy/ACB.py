@@ -629,7 +629,7 @@ class ACB:
 		})
 		return cueNameRow
 
-	def AddWaveformAndCue(self, streaming, newBytes, newType, cueName=None, cueId=None, seqCmdBytes=[111, 4, 0, 0, 39, 16]):
+	def AddWaveformAndCue(self, streaming, newBytes, newType, cueName=None, cueId=None, seqCmdBytes=None):
 		# new AWB entry
 		awbId = self.AddAwbEntry(streaming, newBytes)
 		# new Waveform row
@@ -642,6 +642,8 @@ class ACB:
 		# new Track row
 		trackRow = self.AddTrackRow(trackEventRow)
 		# new Sequence Command row
+		if seqCmdBytes is None:
+			seqCmdBytes = list(self.Tables["SeqCommand"].GetRowField(0, "Command").Value.Value)
 		seqCmdRow = self.AddSeqCommandRow(seqCmdBytes)
 		# new Sequence row
 		seqRow = self.AddSequenceRow([trackRow], cmdRow=seqCmdRow)
