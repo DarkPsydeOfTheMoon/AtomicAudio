@@ -33,6 +33,7 @@ def main():
 
 	wave_parser = subparsers.add_parser("replace_waveform", help="Use the provided audio file to replace the waveform at the given AWB ID. Currently only supports ADX.")
 	wave_parser.add_argument("--awb-id", type=int, required=True, help="AWB ID of waveform to be replaced.")
+	wave_parser.add_argument("--new-audio-type", required=False, default="ADX", help="Name of the audio format of the new file. Accepted values: {}".format(", ".join(x.name for x in ExtEncode)))
 	wave_parser.add_argument("--new-audio-path", required=True, help="Path to audio file that will replace existing one.")
 	#wave_parser.add_argument("--convert-input", action=argparse.BooleanOptionalAction, help="If provided, will convert input audio file to ADX.")
 	wave_parser.add_argument("--adx-key", type=int, required=False, help="If provided, will encrypt input ADX file.") # (whether ADX at source or converted via --convert-input).")
@@ -94,7 +95,7 @@ def main():
 			inputBytes = adx.tobytes()
 
 		if args.action == "replace_waveform":
-			acb.ReplaceWaveform(args.awb_id, streaming, inputBytes)
+			acb.ReplaceWaveform(args.awb_id, streaming, inputBytes, replacementType=args.new_audio_type)
 		elif args.action == "add_simple_cue":
 			#print(ExtEncode[args.new_audio_type].value)
 			acb.AddWaveformAndCue(streaming, inputBytes, args.new_audio_type, args.cue_name, args.cue_id)
