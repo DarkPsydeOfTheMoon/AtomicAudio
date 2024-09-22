@@ -95,7 +95,7 @@ def main():
 			inputBytes = adx.tobytes()
 
 		if args.action == "replace_waveform":
-			acb.ReplaceWaveform(args.awb_id, streaming, inputBytes, replacementType=args.new_audio_type)
+			acb.ReplaceWaveform(args.awb_id, streaming, inputBytes, replacementType=ExtEncode[args.new_audio_type].value)
 		elif args.action == "add_simple_cue":
 			#print(ExtEncode[args.new_audio_type].value)
 			acb.AddWaveformAndCue(streaming, inputBytes, args.new_audio_type, args.cue_name, args.cue_id)
