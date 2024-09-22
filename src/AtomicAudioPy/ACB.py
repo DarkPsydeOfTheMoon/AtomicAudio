@@ -374,12 +374,11 @@ class ACB:
 
 
 	def ReplaceWaveform(self, awbId, streaming, replacementBytes, replacementType=0):
-		assert replacementType == 0 # ADX-only for now
 		awb = self.StreamAwbStruct if streaming else self.MemoryAwbStruct
 		mapper = self.StreamAwbId2WaveformRow if streaming else self.MemoryAwbId2WaveformRow
-		if EncodeExt[encodeType] == "ADX":
+		if EncodeExt[replacementType] == "ADX":
 			audio = ADX()
-		elif EncodeExt[encodeType] == "HCA":
+		elif EncodeExt[replacementType] == "HCA":
 			audio = HCA()
 		else:
 			raise ValueError("Filetypes other than ADX and HCA not yet implemented.")
