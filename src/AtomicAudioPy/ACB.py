@@ -149,7 +149,7 @@ class ACB:
 			self.RecursivelyGetReferences(refType, refIndex, depth=1, ind=0, printing=True, extracting=False)
 			print()
 
-	def RecursivelyGetReferences(self, refType, refIndex, depth=0, ind=0, printing=False, adxKey=None, outputFormat=None, path="", extracting=False):
+	def RecursivelyGetReferences(self, refType, refIndex, depth=0, ind=0, printing=False, keycode=None, outputFormat=None, path="", extracting=False):
 		if ReferenceType(refType) == ReferenceType.Waveform:
 			streaming = self.Tables["Waveform"].GetRowField(refIndex, "Streaming").Value
 			encodeType = self.Tables["Waveform"].GetRowField(refIndex, "EncodeType").Value
@@ -204,8 +204,11 @@ class ACB:
 					output_ext = EncodeExt[encodeType]
 				filename = f"{path}.{output_ext}"
 				if audio is not None:
-					if EncodeExt[encodeType] == "ADX" and adxKey is not None:
-						audio.decrypt(adxKey)
+					if keycode is not None:
+						if EncodeExt[encodeType] == "ADX":
+							audio.decrypt(keycode)
+						elif EncodeExt[encodeType] == "HCA":
+							audio.Crypt(keycode * ((awb.Key << 16) | ((~awb.Key + 2) + 2**16)))
 					audio.write_right(filename)
 				elif awb is not None:
 					with open(filename, "wb") as f:
@@ -239,7 +242,7 @@ class ACB:
 			refItems2 = self.Tables["Synth"].GetRowField(refIndex, "ReferenceItems").Value.Value
 			refType2 = (refItems2[0] << 8) + refItems2[1]
 			refIndex2 = (refItems2[2] << 8) + refItems2[3]
-			self.RecursivelyGetReferences(refType2, refIndex2, depth=depth+1, ind=0, printing=printing, adxKey=adxKey, outputFormat=outputFormat, path=path, extracting=extracting)
+			self.RecursivelyGetReferences(refType2, refIndex2, depth=depth+1, ind=0, printing=printing, keycode=keycode, outputFormat=outputFormat, path=path, extracting=extracting)
 		elif ReferenceType(refType) == ReferenceType.Sequence or ReferenceType(refType) == ReferenceType.LinkedSequence:
 			seqType = self.Tables["Sequence"].GetRowField(refIndex, "Type").Value
 			pbr = self.Tables["Sequence"].GetRowField(refIndex, "PlaybackRatio").Value
@@ -300,7 +303,7 @@ class ACB:
 			trackIndex = self.Tables["Sequence"].GetRowField(refIndex, "TrackIndex").Value.Value
 			for i in range(numTracks):
 				trackId = (trackIndex[2*i] << 8) + trackIndex[(2*i)+1]
-				self.RecursivelyGetReferences(ReferenceType.Track.value, trackId, depth=depth+1, ind=i, printing=printing, adxKey=adxKey, outputFormat=outputFormat, path=f"{path}.{i}", extracting=extracting)
+				self.RecursivelyGetReferences(ReferenceType.Track.value, trackId, depth=depth+1, ind=i, printing=printing, keycode=keycode, outputFormat=outputFormat, path=f"{path}.{i}", extracting=extracting)
 		elif ReferenceType(refType) == ReferenceType.Track:
 			eventIndex = self.Tables["Track"].GetRowField(refIndex, "EventIndex").Value
 			if printing:
@@ -345,11 +348,11 @@ class ACB:
 				params = [cmdBytes.pop(0) for j in range(paramCount)]
 				if CommandType(cmdType) == CommandType.NoteOn:
 					refType2, refIndex2 = ParamsToArgs(params, [2, 2])
-					self.RecursivelyGetReferences(refType2, refIndex2, depth=depth+1, ind=ind, printing=printing, adxKey=adxKey, outputFormat=outputFormat, path=f"{path}.{ind}", extracting=extracting)
+					self.RecursivelyGetReferences(refType2, refIndex2, depth=depth+1, ind=ind, printing=printing, keycode=keycode, outputFormat=outputFormat, path=f"{path}.{ind}", extracting=extracting)
 					ind += 1
 				elif CommandType(cmdType) == CommandType.NoteOnWithNo:
 					refType2, refIndex2, unk = ParamsToArgs(params, [2, 2, 2])
-					self.RecursivelyGetReferences(refType2, refIndex2, depth=depth+1, ind=ind, printing=printing, adxKey=adxKey, outputFormat=outputFormat, path=f"{path}.{ind}", extracting=extracting)
+					self.RecursivelyGetReferences(refType2, refIndex2, depth=depth+1, ind=ind, printing=printing, keycode=keycode, outputFormat=outputFormat, path=f"{path}.{ind}", extracting=extracting)
 					ind += 1
 				elif printing and CommandType(cmdType) == CommandType.Delay:
 					milliseconds = ParamsToArgs(params, [4])[0]
@@ -673,7 +676,7 @@ class ACB:
 			"Command": RefData(length=len(cmdBytes), magic=b"\x00"*4, value=array.array("B", cmdBytes))
 		})
 
-	def Extract(self, base_path, adxKey=None, outputFormat=None, printing=False, nameByCue=False):
+	def Extract(self, base_path, keycode=None, outputFormat=None, printing=False, nameByCue=False):
 		os.makedirs(base_path, exist_ok=True)
 		if nameByCue:
 			for cueId in sorted(self.CueId2CueNameRow):
@@ -684,7 +687,7 @@ class ACB:
 					print(f"Cue #{cueId}: {cueName}")
 				refType = self.Tables["Cue"].GetRowField(cueRow, "ReferenceType").Value
 				refIndex = self.Tables["Cue"].GetRowField(cueRow, "ReferenceIndex").Value
-				self.RecursivelyGetReferences(refType, refIndex, printing=printing, adxKey=adxKey, outputFormat=outputFormat, path=f"{base_path}/{cueId}.{cueName}", extracting=True)
+				self.RecursivelyGetReferences(refType, refIndex, printing=printing, keycode=keycode, outputFormat=outputFormat, path=f"{base_path}/{cueId}.{cueName}", extracting=True)
 				if printing:
 					print()
 		else:
@@ -740,8 +743,11 @@ class ACB:
 					output_ext = EncodeExt[encodeType]
 				filename = "{}/{}-{}.{}".format(base_path, "stream" if streaming else "memory", awbId, output_ext)
 				if audio is not None:
-					if adxKey is not None and EncodeExt[encodeType] == "ADX":
-						audio.decrypt(adxKey)
+					if keycode is not None:
+						if EncodeExt[encodeType] == "ADX":
+							audio.decrypt(keycode)
+						elif EncodeExt[encodeType] == "HCA":
+							audio.Crypt(keycode * ((awb.Key << 16) | ((~awb.Key + 2) + 2**16)))
 					audio.write_right(filename)
 				elif awb is not None:
 					with open(filename, "wb") as f:
