@@ -49,26 +49,25 @@ Coming soon...?
 
 ### `extract_audio`
 
-Extract the audio waveforms from the in-memory and (optionally) streamed AWBs associated with a provided ACB. Also optionally decrypt the extracted audio if in ADX format. For example:
+Extract the audio waveforms from the in-memory and (optionally) streamed AWBs associated with a provided ACB. Also optionally decrypt the extracted audio if in ADX or HCA format. For example:
 
 ```
 python -u AtomicAudioTool.py extract_audio \
   --input-acb-path /PATH/TO/MY/P5RPC.ACB \
   --input-awb-path /PATH/TO/MY/P5RPC.AWB \
-  --adx-key 9923540143823782 \
+  --key-code 9923540143823782 \
   --name-by-cue
 ```
 
 **TODO:**
 - Allow extraction from AWB without associated ACB
-- Add decryption for HCA files
 - Add option for direct conversion to WAV in output folder
 
 For more details, run `python AtomicAudioTool.py extract_audio --help`.
 
 ### `replace_waveform`
 
-Replace the audio file with a given AWB ID with a provided file. Optionally encrypt the file if it's an ADX. For example:
+Replace the audio file with a given AWB ID with a provided file. Optionally encrypt the file if it's an ADX or HCA. For example:
 
 ```
 python -u AtomicAudioTool.py replace_waveform \
@@ -76,13 +75,13 @@ python -u AtomicAudioTool.py replace_waveform \
   --input-awb-path /PATH/TO/MY/P5RPC/VANILLA.AWB \
   --output-acb-path /PATH/TO/MY/P5RPC/MODDED.ACB \
   --output-awb-path /PATH/TO/MY/P5RPC/MODDED.AWB \
-  --adx-key 9923540143823782 \
+  --key-code 9923540143823782 \
   --awb-id 5 \
   --new-audio-path /PATH/TO/MY/NEW.ADX
+  --new-audio-type ADX
 ```
 
 **TODO:**
-- Add encryption for HCA files
 - Add option for WAV (etc.) input with built-in conversion
 
 For more details, run `python AtomicAudioTool.py replace_waveform --help`.
@@ -97,10 +96,11 @@ python -u AtomicAudioTool.py add_simple_cue \
   --input-awb-path /PATH/TO/MY/P5RPC/VANILLA.AWB \
   --output-acb-path /PATH/TO/MY/P5RPC/MODDED.ACB \
   --output-awb-path /PATH/TO/MY/P5RPC/MODDED.AWB \
-  --adx-key 9923540143823782 \
+  --key-code 9923540143823782 \
   --cue-id 25 \
   --cue-name MyNewCue \
   --new-audio-path /PATH/TO/MY/NEW.ADX
+  --new-audio-type ADX
 ```
 
 **TODO:**
