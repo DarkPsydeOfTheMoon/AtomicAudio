@@ -60,7 +60,7 @@ class HCA(Serializable):
 			frame = self.Data[i*self.FrameSize:(i+1)*self.FrameSize]
 			assert len(frame) == self.FrameSize
 			if crc.Compute(frame, len(frame)-2) != (frame[-2] << 8) | frame[-1]:
-				raise ValueError("ruh-roh")
+				raise ValueError(f"Checksum for frame {i} is invalid.")
 
 		failed = False
 		try:

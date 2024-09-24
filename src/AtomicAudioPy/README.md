@@ -105,7 +105,6 @@ python -u AtomicAudioTool.py add_simple_cue \
 
 **TODO:**
 - Add more customization re: the type of cue and extra settings for it
-- Add option to copy the style of an existing cue (to recreate the basic settings)
 
 For more details, run `python AtomicAudioTool.py add_simple_cue --help`.
 
