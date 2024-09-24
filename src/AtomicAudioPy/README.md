@@ -77,7 +77,7 @@ python -u AtomicAudioTool.py replace_waveform \
   --output-awb-path /PATH/TO/MY/P5RPC/MODDED.AWB \
   --key-code 9923540143823782 \
   --awb-id 5 \
-  --new-audio-path /PATH/TO/MY/NEW.ADX
+  --new-audio-path /PATH/TO/MY/NEW.ADX \
   --new-audio-type ADX
 ```
 
@@ -99,7 +99,7 @@ python -u AtomicAudioTool.py add_simple_cue \
   --key-code 9923540143823782 \
   --cue-id 25 \
   --cue-name MyNewCue \
-  --new-audio-path /PATH/TO/MY/NEW.ADX
+  --new-audio-path /PATH/TO/MY/NEW.ADX \
   --new-audio-type ADX
 ```
 
