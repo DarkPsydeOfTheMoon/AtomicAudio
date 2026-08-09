@@ -60,13 +60,14 @@ class HCA(Serializable):
 			self.LoopStartSample	= 1024*self.Header.LoopChunk.LoopStartFrame + self.Header.LoopChunk.PreLoopSamples
 			self.LoopEndSample		= 1024*(self.Header.LoopChunk.LoopEndFrame + 1) - self.Header.LoopChunk.PostLoopSamples
 
-		failed = False
+		# i guess if it's embedded in AWB it won't be EOF, huh...
+		"""failed = False
 		try:
 			rw.assert_eof()
 		except Exception:
 			print("Failed to read file!")
 			remainder = rw.peek_bytestream(64)
-			print(len(remainder), remainder)
+			print(len(remainder), remainder)"""
 
 	def ValidateChecksum():
 		crc = CRC16()

@@ -60,6 +60,7 @@ class ACB:
 			"OutsideLink", "StringValue",
 			"WaveformExtensionData",
 			"GlobalAisacReference",
+			"Aisac", "AisacControlName", "AutoModulation", "Graph",
 		]:
 			self.Tables[tableName] = self.AcbStruct.GetRowField(0, f"{tableName}Table").Value.Value
 
@@ -126,6 +127,14 @@ class ACB:
 					if awbId not in self.MemoryAwbId2WaveformRow:
 						self.MemoryAwbId2WaveformRow[awbId] = set()
 					self.MemoryAwbId2WaveformRow[awbId].add(j)
+
+		self.AisacControlIdToName = dict()
+		if self.Tables["AisacControlName"] is not None:
+			for i in range(self.Tables["AisacControlName"].RowCount):
+				controlId = self.Tables["AisacControlName"].GetRowField(i, "AisacControlId").Value
+				controlName = self.Tables["AisacControlName"].GetRowField(i, "AisacControlName").Value.Value
+				self.AisacControlIdToName[controlId] = controlName
+				print(controlId, controlName)
 
 	def RefreshHash(self):
 		#if self.AwbPath is not None:
@@ -239,6 +248,44 @@ class ACB:
 		else:
 			print("{}{} ({})".format(" "*(depth+2), CommandType(cmdType).name, ", ".join(str(p) for p in params)))
 
+	def PrintLocalAisacs(self, tableName, refIndex, depth=0):
+		aisacBytes = self.Tables[tableName].GetRowField(refIndex, "LocalAisacs").Value.Value
+		if aisacBytes is not None:
+			aisacControls = list()
+			aisacAutomations = list()
+			aisacAutoModulations = list()
+			for aisacInd in ParamsToArgs(aisacBytes, [2]*(len(aisacBytes)//2)):
+				print(self.Tables["Aisac"].GetRowField(aisacInd, "Id").Value, self.Tables["Aisac"].GetRowField(aisacInd, "Type").Value)
+				print(self.Tables["Aisac"].GetRowField(aisacInd, "AutoModulationIndex").Value, self.Tables["Aisac"].GetRowField(aisacInd, "GraphIndexes").Value.Value)
+				controlId = self.Tables["Aisac"].GetRowField(aisacInd, "ControlId").Value
+				autoModInd = self.Tables["Aisac"].GetRowField(aisacInd, "AutoModulationIndex").Value
+				graphInds = self.Tables["Aisac"].GetRowField(aisacInd, "GraphIndexes").Value.Value
+				if controlId >= 3000:
+					autoModInd = self.Tables["Aisac"].GetRowField(aisacInd, "AutoModulationIndex").Value
+					#print("#####", self.Tables["AutoModulation"].GetRowField(autoModInd, "Type").Value)
+					#print("#####", self.Tables["AutoModulation"].GetRowField(autoModInd, "TriggerType").Value)
+					#print("#####", self.Tables["AutoModulation"].GetRowField(autoModInd, "Time").Value)
+					#print("#####", self.Tables["AutoModulation"].GetRowField(autoModInd, "Key").Value)
+				elif controlId >= 2000:
+					assert autoModInd == 0xFFFF
+				else:
+					assert autoModInd == 0xFFFF
+					aisacControls.append(self.AisacControlIdToName[controlId])
+			print("{}Local Aisacs:".format(" "*depth))
+			if aisacControls:
+				print("{}Controls: {}".format(" "*(depth+1), ", ".join(aisacControls)))
+			print("{}Automations: ".format(" "*(depth+1)))
+			print("{}Modulations: ".format(" "*(depth+1)))
+
+	def PrintGlobalAisacs(self, tableName, refIndex, depth=0):
+		globalAisacStart = self.Tables[tableName].GetRowField(refIndex, "GlobalAisacStartIndex").Value
+		globalAisacCount = self.Tables[tableName].GetRowField(refIndex, "GlobalAisacNumRefs").Value
+		if globalAisacStart != 0xFFFF and globalAisacCount > 0:
+			print("{}Global Aisacs:".format(" "*(depth+1)))
+			for globalAisacInd in range(globalAisacStart, globalAisacStart+globalAisacCount):
+				globalAisacName = self.Tables["GlobalAisacReference"].GetRowField(globalAisacInd, "Name").Value.Value
+				print("{}{}".format(" "*(depth+2), globalAisacName))
+
 	def RecursivelyGetReferences(self, refType, refIndex, depth=0, ind=0, printing=False, keycode=None, outputFormat=None, path="", extracting=False):
 		if ReferenceType(refType) == ReferenceType.Waveform:
 			streamingEnum = self.Tables["Waveform"].GetRowField(refIndex, "Streaming").Value
@@ -320,13 +367,8 @@ class ACB:
 		elif ReferenceType(refType) == ReferenceType.Synth or ReferenceType(refType) == ReferenceType.LinkedSynth:
 			if printing:
 				print("{}Synth #{}".format(" "*depth, ind+1))
-				globalAisacStart = self.Tables["Synth"].GetRowField(refIndex, "GlobalAisacStartIndex").Value
-				globalAisacCount = self.Tables["Synth"].GetRowField(refIndex, "GlobalAisacNumRefs").Value
-				if globalAisacStart != 0xFFFF and globalAisacCount > 0:
-					print("{}Global Aisacs:".format(" "*(depth+1)))
-					for globalAisacInd in range(globalAisacStart, globalAisacStart+globalAisacCount):
-						globalAisacName = self.Tables["GlobalAisacReference"].GetRowField(globalAisacInd, "Name").Value.Value
-						print("{}{}".format(" "*(depth+2), globalAisacName))
+				self.PrintLocalAisacs("Synth", refIndex, depth=depth)
+				self.PrintGlobalAisacs("Synth", refIndex, depth=depth)
 				cmdIndex = self.Tables["Synth"].GetRowField(refIndex, "CommandIndex").Value
 				if cmdIndex != 0xFFFF:
 					cmdBytes = list(self.Tables["SynthCommand"].GetRowField(cmdIndex, "Command").Value.Value)
@@ -342,13 +384,8 @@ class ACB:
 			##### Category. etc.
 			if printing:
 				print("{}{} Sequence (x{} speed)".format(" "*depth, SequenceType(seqType).name, pbr/100))
-				globalAisacStart = self.Tables["Sequence"].GetRowField(refIndex, "GlobalAisacStartIndex").Value
-				globalAisacCount = self.Tables["Sequence"].GetRowField(refIndex, "GlobalAisacNumRefs").Value
-				if globalAisacStart != 0xFFFF and globalAisacCount > 0:
-					print("{}Global Aisacs:".format(" "*(depth+1)))
-					for globalAisacInd in range(globalAisacStart, globalAisacStart+globalAisacCount):
-						globalAisacName = self.Tables["GlobalAisacReference"].GetRowField(globalAisacInd, "Name").Value.Value
-						print("{}{}".format(" "*(depth+2), globalAisacName))
+				self.PrintLocalAisacs("Sequence", refIndex, depth=depth)
+				self.PrintGlobalAisacs("Sequence", refIndex, depth=depth)
 				cmdIndex = self.Tables["Sequence"].GetRowField(refIndex, "CommandIndex").Value
 				if cmdIndex != 0xFFFF:
 					cmdBytes = list(self.Tables["SeqCommand"].GetRowField(cmdIndex, "Command").Value.Value)
@@ -367,13 +404,8 @@ class ACB:
 			eventIndex = self.Tables["Track"].GetRowField(refIndex, "EventIndex").Value
 			if printing:
 				print("{}Track #{}".format(" "*depth, ind+1))
-				globalAisacStart = self.Tables["Track"].GetRowField(refIndex, "GlobalAisacStartIndex").Value
-				globalAisacCount = self.Tables["Track"].GetRowField(refIndex, "GlobalAisacNumRefs").Value
-				if globalAisacStart != 0xFFFF and globalAisacCount > 0:
-					print("{}Global Aisacs:".format(" "*(depth+2)))
-					for globalAisacInd in range(globalAisacStart, globalAisacStart+globalAisacCount):
-						globalAisacName = self.Tables["GlobalAisacReference"].GetRowField(globalAisacInd, "Name").Value.Value
-						print("{}{}".format(" "*(depth+3), globalAisacName))
+				self.PrintLocalAisacs("Track", refIndex, depth=depth)
+				self.PrintGlobalAisacs("Track", refIndex, depth=depth)
 				cmdIndex = self.Tables["Track"].GetRowField(refIndex, "CommandIndex").Value
 				if cmdIndex != 0xFFFF:
 					cmdBytes = list(self.Tables["TrackCommand"].GetRowField(cmdIndex, "Command").Value.Value)

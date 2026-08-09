@@ -180,7 +180,8 @@ class ADX(Serializable):
 		self.FooterPadding = rw.rw_bytestring(self.FooterPadding, paddingSize)
 		assert self.FooterPadding == b"\x00"*paddingSize
 
-		failed = False
+		# i guess if it's embedded in AWB it won't be EOF, huh...
+		"""failed = False
 		try:
 			rw.assert_eof()
 		except Exception:
@@ -189,7 +190,7 @@ class ADX(Serializable):
 		if failed:
 			print("Failed to read file!")
 			remainder = rw.peek_bytestream(64)
-			print(len(remainder), remainder)
+			print(len(remainder), remainder)"""
 
 	def SetCoefficients(self):
 		if EncodingMode(self.EncodingType) == EncodingMode.Fixed:
